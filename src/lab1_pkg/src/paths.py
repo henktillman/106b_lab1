@@ -53,16 +53,16 @@ class CircularPath(MotionPath):
         self.target_time = target_time
 
     def target_position(self, time):
-        x = self.center[0] + self.radius * np.cos(self.start_angle + 2*np.pi / self.target_time)
-        y = self.center[1] + self.radius * np.sin(self.start_angle + 2*np.pi / self.target_time)
+        x = self.center[0] + self.radius * np.cos(self.start_angle + 2*np.pi * time/self.target_time)
+        y = self.center[1] + self.radius * np.sin(self.start_angle + 2*np.pi * time/self.target_time)
         z = self.start_pos[2]
         return np.array([x, y, z])
 
     def target_velocity(self, time):
         circum = np.pi * 2 * self.radius
         return circum / self.target_time \
-            * np.array([np.cos(self.start_angle + 2*np.pi / self.target_time + np.pi/2),
-                np.sin(self.start_angle + 2*np.pi / self.target_time + np.pi/2),
+            * np.array([np.cos(self.start_angle + 2*np.pi * time/self.target_time + np.pi/2),
+                np.sin(self.start_angle + 2*np.pi * time/self.target_time + np.pi/2),
                 0])
 
     def target_acceleration(self, time):
