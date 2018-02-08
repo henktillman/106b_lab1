@@ -70,4 +70,8 @@ if __name__ == "__main__":
 
     raw_input('Press <Enter> to start')
     # YOUR CODE HERE
-    # IMPORTANT: you may find useful functions in utils.py
+    cur_pos = self.limb.endpoint_pose()['position']
+    target_time = 5
+    path = LinearPath(cur_pos, cur_pos+np.array([0.2, 0.2, 0]), target_time)
+
+    controller.execute_path(path, lambda c, p, t: t > p.target_time, timeout=target_time, log=True)
