@@ -1,4 +1,5 @@
 import rospy
+import pdb
 import numpy as np
 from utils import *
 from geometry_msgs.msg import PoseStamped
@@ -106,11 +107,13 @@ class PDWorkspaceVelocityController(Controller):
         delta_v = cur_v - targ_v
 
         control_v = -self.Kp*delta_x - self.Kv*delta_v
+        control_v = np.pad(control_v, (0, 3), 'constant')
         inv_j = self.kin.jacobian_pseudo_inverse()
-        joint_v = np.matmul(inv_j, control_v)
+        joint_v = np.matmul(inv_j, control_v).tolist()[0]
 
         joint_names = self.limb.joint_names()
-        self.limb.set_joint_velocities({joint_name: joint_v for (joint_name, joint_v) in zip(joint_names, joint_v)})
+        joint_dict = {joint_name: jv for (joint_name, jv) in zip(joint_names, joint_v)}
+        self.limb.set_joint_velocities(joint_dict)
 
 class PDJointVelocityController(Controller):
     def __init__(self, limb, kin, Kp, Kv):
@@ -138,7 +141,7 @@ class PDJointVelocityController(Controller):
         delta_pos = [cur - targ for (cur, targ) in zip(cur_pos, targ_pos)]
         delta_vel = [cur - targ for (cur, targ) in zip(cus_vel, targ_vel)]
 
-        joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel)
+        joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel)]
 
         self.limb.set_joint_velocities({joint_name: joint_v for (joint_name, joint_v) in zip(joint_names, joint_v)})
 
@@ -155,7 +158,7 @@ class PDJointTorqueController(Controller):
         cur_pos = [cur_angles[joint_name] for joint_name in joint_names] # list of current joint angles
 
         targ_x = path.target_position(t)
-        targ_pos = self.kin.inverse_kinematics(list(targ_x), [0, 0, 0, 0], cur_pos) # list of target joint angles
+        targ_pos = self.kin.inverse_kinematics(list(targ_x), [0, 0, 0, 1], cur_pos) # list of target joint angles
 
         cur_v = self.limb.joint_velocities()
         cur_vel = [cur_vels[joint_name] for joint_name in joint_names] # list of current joint velocities
@@ -167,7 +170,7 @@ class PDJointTorqueController(Controller):
         delta_pos = [cur - targ for (cur, targ) in zip(cur_pos, targ_pos)]
         delta_vel = [cur - targ for (cur, targ) in zip(cus_vel, targ_vel)]
 
-        joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel) # backwards correction term
+        joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel)] # backwards correction term
         Ms = self.kin.inertia()
 
         targ_a = path.target_acceleration(t)

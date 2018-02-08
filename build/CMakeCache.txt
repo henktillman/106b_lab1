@@ -285,10 +285,10 @@ cpp_common_DIR:PATH=/opt/ros/indigo/share/cpp_common/cmake
 dynamic_reconfigure_DIR:PATH=/opt/ros/indigo/share/dynamic_reconfigure/cmake
 
 //Value Computed by CMake
-ee106b_lab1_BINARY_DIR:STATIC=/home/cc/ee106b/sp18/class/ee106b-aax/ros_workspaces/lab1_ws/build/Lab1_Resources/lab1_pkg
+ee106b_lab1_BINARY_DIR:STATIC=/home/cc/ee106b/sp18/class/ee106b-aax/ros_workspaces/lab1_ws/build/lab1_pkg
 
 //Value Computed by CMake
-ee106b_lab1_SOURCE_DIR:STATIC=/home/cc/ee106b/sp18/class/ee106b-aax/ros_workspaces/lab1_ws/src/Lab1_Resources/lab1_pkg
+ee106b_lab1_SOURCE_DIR:STATIC=/home/cc/ee106b/sp18/class/ee106b-aax/ros_workspaces/lab1_ws/src/lab1_pkg
 
 //The directory containing a CMake configuration file for gencpp.
 gencpp_DIR:PATH=/opt/ros/indigo/share/gencpp/cmake
@@ -329,6 +329,12 @@ gtest_force_shared_crt:BOOL=OFF
 
 //Dependencies for the target
 gtest_main_LIB_DEPENDS:STATIC=general;-lpthread;general;gtest;
+
+//Value Computed by CMake
+lab1_pkg_BINARY_DIR:STATIC=/home/cc/ee106b/sp18/class/ee106b-aax/ros_workspaces/lab1_ws/build/lab1_pkg
+
+//Value Computed by CMake
+lab1_pkg_SOURCE_DIR:STATIC=/home/cc/ee106b/sp18/class/ee106b-aax/ros_workspaces/lab1_ws/src/lab1_pkg
 
 //Path to a library.
 lib:FILEPATH=/opt/ros/indigo/lib/libdynamic_reconfigure_config_init_mutex.so

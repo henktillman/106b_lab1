@@ -20,7 +20,7 @@ import numpy as np
 from utils import *
 from baxter_pykdl import baxter_kinematics
 import signal
-from controllers import PDJointPositionController, PDJointVelocityController, PDJointTorqueController
+from controllers import PDWorkspaceVelocityController, PDJointVelocityController, PDJointTorqueController
 from paths import LinearPath, CircularPath, MultiplePaths
 
 def lookup_tag(tag_number):
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     parser.add_argument('-arm', '-a', type=str, default='left') # or right
     args = parser.parse_args()
 
-    limb = baxter_interface.Limb(arm)
+    limb = baxter_interface.Limb(args.arm)
     kin = baxter_kinematics('left')
 
     if args.controller == 'workspace':
@@ -70,8 +70,8 @@ if __name__ == "__main__":
 
     raw_input('Press <Enter> to start')
     # YOUR CODE HERE
-    cur_pos = self.limb.endpoint_pose()['position']
+    cur_pos = limb.endpoint_pose()['position']
     target_time = 5
     path = LinearPath(cur_pos, cur_pos+np.array([0.2, 0.2, 0]), target_time)
 
-    controller.execute_path(path, lambda c, p, t: t > p.target_time, timeout=target_time, log=True)
+    controller.execute_path(path, lambda c, p, t: t > p.target_time, timeout=target_time, log=False)

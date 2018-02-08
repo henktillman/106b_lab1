@@ -5,5 +5,5 @@
 # This file includes the relevant testing commands required for 
 # testing this directory and lists subdirectories to be tested as well.
 SUBDIRS(gtest)
-SUBDIRS(Lab1_Resources/lab1_pkg)
+SUBDIRS(lab1_pkg)
 SUBDIRS(baxter_pykdl)

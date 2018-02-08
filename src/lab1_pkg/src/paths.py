@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from utils import *
+import pdb
 """
 Starter script for lab1.
 Author: Chris Correa
@@ -20,10 +21,10 @@ class MotionPath:
         raise NotImplementedError
 
 class LinearPath(MotionPath):
-	def __init__(self, start_pos, target_pos, target_time):
-        self.start_pos = start_pos
-        self.target_pos = target_pos
-        self.target_time = target_time
+    def __init__(self, start_pos, target_pos, target_time):
+        self.start_pos = np.array(start_pos)
+        self.target_pos = np.array(target_pos)
+        self.target_time = np.array(target_time)
 
     def target_position(self, time):
         return (self.start_pos*(self.target_time - time) + self.target_pos*time) / self.target_time
@@ -44,7 +45,7 @@ class LinearPath(MotionPath):
         return 0
 
 class CircularPath(MotionPath):
-	def __init__(self, center, start_pos, target_time):
+    def __init__(self, center, start_pos, target_time):
         self.center = center
         self.start_pos = start_pos
         self.radius = np.linalg.norm([start_pos[0] - center[0], start_pos[1] - center[1]])
@@ -73,6 +74,7 @@ class CircularPath(MotionPath):
 # MultiplePaths object, which would determine when to go onto the next path.
 
 class MultiplePaths(MotionPath):
-	def __init__(self, paths):
-
-	def get_current_path(self, time):
+    def __init__(self, paths):
+        pass
+    def get_current_path(self, time):
+        pass
