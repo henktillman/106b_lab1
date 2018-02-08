@@ -175,9 +175,3 @@ class PDJointTorqueController(Controller):
 
         self.limb.set_joint_torques({joint_name: np.matmul(M, acc) + joint_v \
             for (joint_name, joint_v, M, acc) in zip(joint_names, joint_v, Ms, targ_acc)})
-        #get current joint positions
-        #use IK to get desired joint positions
-        #get current joint velocities
-        #use inv Jacobian to get desired joint velocities (q = J^-1 x)
-        #how to get target joint accelerations from target end effector acceleration? also Jacobian?
-        #torque = Ma - Kd(delta_v) - Kp(delta_x)
