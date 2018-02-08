@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Starter script for lab1. 
+Starter script for lab1.
 Author: Chris Correa
 """
 import copy
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('moveit_node')
     time.sleep(1)
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-ar_marker', '-ar', type=float, default=1)
     parser.add_argument('-controller', '-c', type=str, default='workspace') # or velocity or torque
@@ -54,20 +54,20 @@ if __name__ == "__main__":
 
     if args.controller == 'workspace':
         # YOUR CODE HERE
-        Kp = 
-        Kv = 
+        Kp = 0.75
+        Kv = 0.75
         controller = PDWorkspaceVelocityController(limb, kin, Kp, Kv)
     if args.controller == 'velocity':
         # YOUR CODE HERE
-        Kp = 
-        Kv = 
+        Kp = 0.75
+        Kv = 0.75
         controller = PDJointVelocityController(limb, kin, Kp, Kv)
     if args.controller == 'torque':
         # YOUR CODE HERE
-        Kp = 
-        Kv = 
+        Kp = 0.75
+        Kv = 0.75
         controller = PDJointTorqueController(limb, kin, Kp, Kv)
-    
+
     raw_input('Press <Enter> to start')
     # YOUR CODE HERE
     # IMPORTANT: you may find useful functions in utils.py

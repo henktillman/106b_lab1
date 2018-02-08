@@ -3,7 +3,7 @@ import numpy as np
 from utils import *
 from geometry_msgs.msg import PoseStamped
 """
-Starter script for lab1. 
+Starter script for lab1.
 Author: Chris Correa
 """
 class Controller:
@@ -59,7 +59,7 @@ class Controller:
             plt.plot(times, target_velocities[:,0], label='Desired')
             plt.xlabel("Time (t)")
             plt.ylabel("X Velocity Error")
-            
+
             plt.subplot(3,2,3)
             plt.plot(times, np_actual_positions[:,1], label='Actual')
             plt.plot(times, target_positions[:,1], label='Desired')
@@ -71,7 +71,7 @@ class Controller:
             plt.plot(times, target_velocities[:,1], label='Desired')
             plt.xlabel("Time (t)")
             plt.ylabel("Y Velocity Error")
-            
+
             plt.subplot(3,2,5)
             plt.plot(times, np_actual_positions[:,2], label='Actual')
             plt.plot(times, target_positions[:,2], label='Desired')
@@ -96,7 +96,21 @@ class PDWorkspaceVelocityController(Controller):
         self.Kv = Kv
 
     def step_path(self, path, t):
-        # YOUR CODE HERE
+        targ_x = path.target_position(t)
+        cur_x = self.limb.endpoint_pose()['position']
+
+        targ_v = path.target_velocity(t)
+        cur_v = self.limb.endpoint_velocity()['linear']
+
+        delta_x = cur_x - targ_x
+        delta_v = cur_v - targ_v
+
+        control_v = -self.Kp*delta_x - self.Kv*delta_v
+        inv_j = self.kin.jacobian_pseudo_inverse()
+        joint_v = np.matmul(inv_j, control_v)
+
+        joint_names = self.limb.joint_names()
+        self.limb.set_joint_velocities({joint_name: joint_v for (joint_name, joint_v) in zip(joint_names, joint_v)})
 
 class PDJointVelocityController(Controller):
     def __init__(self, limb, kin, Kp, Kv):
@@ -107,6 +121,26 @@ class PDJointVelocityController(Controller):
 
     def step_path(self, path, t):
         # YOUR CODE HERE
+        joint_names = self.limb.joint_names()
+        cur_angles = self.limb.joint_angles()
+        cur_pos = [cur_angles[joint_name] for joint_name in joint_names] # list of current angles
+
+        targ_x = path.target_position(t)
+        targ_pos = self.kin.inverse_kinematics(list(targ_x), [0, 0, 0, 1], cur_pos) # list of target joint angles
+
+        cur_v = self.limb.joint_velocities()
+        cur_vel = [cur_vels[joint_name] for joint_name in joint_names] # list of current joint velocities
+
+        targ_v = path.target_velocity(t)
+        inv_j = self.kin.jacobian_pseudo_inverse()
+        targ_vel = np.matmul(inv_j, targ_v) # list of target joint velocities
+
+        delta_pos = [cur - targ for (cur, targ) in zip(cur_pos, targ_pos)]
+        delta_vel = [cur - targ for (cur, targ) in zip(cus_vel, targ_vel)]
+
+        joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel)
+
+        self.limb.set_joint_velocities({joint_name: joint_v for (joint_name, joint_v) in zip(joint_names, joint_v)})
 
 class PDJointTorqueController(Controller):
     def __init__(self, limb, kin, Kp, Kv):
@@ -116,4 +150,34 @@ class PDJointTorqueController(Controller):
         self.Kv = Kv
 
     def step_path(self, path, t):
-        # YOUR CODE HERE
+        joint_names = self.limb.joint_names()
+        cur_angles = self.limb.joint_angles()
+        cur_pos = [cur_angles[joint_name] for joint_name in joint_names] # list of current joint angles
+
+        targ_x = path.target_position(t)
+        targ_pos = self.kin.inverse_kinematics(list(targ_x), [0, 0, 0, 0], cur_pos) # list of target joint angles
+
+        cur_v = self.limb.joint_velocities()
+        cur_vel = [cur_vels[joint_name] for joint_name in joint_names] # list of current joint velocities
+
+        targ_v = path.target_velocity(t)
+        inv_j = self.kin.jacobian_pseudo_inverse()
+        targ_vel = np.matmul(inv_j, targ_v) # list of target joint velocities
+
+        delta_pos = [cur - targ for (cur, targ) in zip(cur_pos, targ_pos)]
+        delta_vel = [cur - targ for (cur, targ) in zip(cus_vel, targ_vel)]
+
+        joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel) # backwards correction term
+        Ms = self.kin.inertia()
+
+        targ_a = path.target_acceleration(t)
+        targ_acc = np.matmul(inv_j, targ_a)
+
+        self.limb.set_joint_torques({joint_name: np.matmul(M, acc) + joint_v \
+            for (joint_name, joint_v, M, acc) in zip(joint_names, joint_v, Ms, targ_acc)})
+        #get current joint positions
+        #use IK to get desired joint positions
+        #get current joint velocities
+        #use inv Jacobian to get desired joint velocities (q = J^-1 x)
+        #how to get target joint accelerations from target end effector acceleration? also Jacobian?
+        #torque = Ma - Kd(delta_v) - Kp(delta_x)

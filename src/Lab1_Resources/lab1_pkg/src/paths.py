@@ -47,7 +47,7 @@ class CircularPath(MotionPath):
 	def __init__(self, center, start_pos, target_time):
         self.center = center
         self.start_pos = start_pos
-        self.radius = np.linalg.norm(start_pos - center)
+        self.radius = np.linalg.norm([start_pos[0] - center[0], start_pos[1] - center[1]])
         self.start_angle = np.arctan2(start_pos[1] - center[1], start_pos[0] - center[0])
         self.target_time = target_time
 
