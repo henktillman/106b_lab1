@@ -72,6 +72,6 @@ if __name__ == "__main__":
     # YOUR CODE HERE
     cur_pos = limb.endpoint_pose()['position']
     target_time = 5
-    path = LinearPath(cur_pos, cur_pos+np.array([0.2, 0.2, 0]), target_time)
+    path = CircularPath(cur_pos, cur_pos+np.array([-0.2, -0.2, 0]), target_time)
 
     controller.execute_path(path, lambda c, p, t: t > p.target_time, timeout=target_time, log=False)
