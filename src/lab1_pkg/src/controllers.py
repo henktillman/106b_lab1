@@ -129,17 +129,19 @@ class PDJointVelocityController(Controller):
         cur_pos = [cur_angles[joint_name] for joint_name in joint_names] # list of current angles
 
         targ_x = path.target_position(t)
-        targ_pos = self.kin.inverse_kinematics(list(targ_x), [0, 0, 0, 1], cur_pos) # list of target joint angles
+        orientation = self.limb.endpoint_pose()['orientation']
+        targ_pos = self.kin.inverse_kinematics(targ_x, orientation, cur_pos).tolist() # list of target joint angles
 
         cur_v = self.limb.joint_velocities()
-        cur_vel = [cur_vels[joint_name] for joint_name in joint_names] # list of current joint velocities
+        cur_vel = [cur_v[joint_name] for joint_name in joint_names] # list of current joint velocities
 
         targ_v = path.target_velocity(t)
+        targ_v = np.pad(targ_v, (0, 3), 'constant')
         inv_j = self.kin.jacobian_pseudo_inverse()
-        targ_vel = np.matmul(inv_j, targ_v) # list of target joint velocities
+        targ_vel = np.matmul(inv_j, targ_v).tolist()[0] # list of target joint velocities
 
         delta_pos = [cur - targ for (cur, targ) in zip(cur_pos, targ_pos)]
-        delta_vel = [cur - targ for (cur, targ) in zip(cus_vel, targ_vel)]
+        delta_vel = [cur - targ for (cur, targ) in zip(cur_vel, targ_vel)]
 
         joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel)]
 

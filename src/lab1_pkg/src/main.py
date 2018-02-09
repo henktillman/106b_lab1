@@ -6,7 +6,7 @@ Author: Chris Correa
 import copy
 import rospy
 import sys
-import argparse
+import argparse, pdb
 
 import baxter_interface
 import moveit_commander
@@ -45,12 +45,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-ar_marker', '-ar', type=float, default=1)
-    parser.add_argument('-controller', '-c', type=str, default='workspace') # or velocity or torque
-    parser.add_argument('-arm', '-a', type=str, default='left') # or right
+    parser.add_argument('-controller', '-c', type=str, default='torque') # workspace, velocity, or torque
+    parser.add_argument('-arm', '-a', type=str, default='right') # or right
     args = parser.parse_args()
 
     limb = baxter_interface.Limb(args.arm)
-    kin = baxter_kinematics('left')
+    kin = baxter_kinematics('right')
 
     if args.controller == 'workspace':
         # YOUR CODE HERE
@@ -69,9 +69,8 @@ if __name__ == "__main__":
         controller = PDJointTorqueController(limb, kin, Kp, Kv)
 
     raw_input('Press <Enter> to start')
-    # YOUR CODE HERE
     cur_pos = limb.endpoint_pose()['position']
     target_time = 5
-    path = CircularPath(cur_pos, cur_pos+np.array([-0.2, -0.2, 0]), target_time)
+    path = CircularPath(cur_pos, cur_pos+np.array([-0.1, 0, 0]), target_time)
 
     controller.execute_path(path, lambda c, p, t: t > p.target_time, timeout=target_time, log=False)
