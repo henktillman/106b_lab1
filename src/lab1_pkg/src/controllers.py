@@ -140,12 +140,12 @@ class PDJointVelocityController(Controller):
         inv_j = self.kin.jacobian_pseudo_inverse()
         targ_vel = np.matmul(inv_j, targ_v).tolist()[0] # list of target joint velocities
 
-        delta_pos = [cur - targ for (cur, targ) in zip(cur_pos, targ_pos)]
-        delta_vel = [cur - targ for (cur, targ) in zip(cur_vel, targ_vel)]
+        delta_pos = np.array([cur - targ for (cur, targ) in zip(cur_pos, targ_pos)])
+        delta_vel = np.array([cur - targ for (cur, targ) in zip(cur_vel, targ_vel)])
 
-        joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel)]
+        joint_v = -self.Kp*delta_pos - self.Kv*delta_vel
 
-        self.limb.set_joint_velocities({joint_name: joint_v for (joint_name, joint_v) in zip(joint_names, joint_v)})
+        self.limb.set_joint_velocities({joint_name: jv for (joint_name, jv) in zip(joint_names, joint_v.tolist())})
 
 class PDJointTorqueController(Controller):
     def __init__(self, limb, kin, Kp, Kv):
@@ -171,15 +171,15 @@ class PDJointTorqueController(Controller):
         inv_j = self.kin.jacobian_pseudo_inverse()
         targ_vel = np.matmul(inv_j, targ_v).tolist()[0] # list of target joint velocities
 
-        delta_pos = [cur - targ for (cur, targ) in zip(cur_pos, targ_pos)]
-        delta_vel = [cur - targ for (cur, targ) in zip(cur_vel, targ_vel)]
+        delta_pos = np.array([cur - targ for (cur, targ) in zip(cur_pos, targ_pos)])
+        delta_vel = np.array([cur - targ for (cur, targ) in zip(cur_vel, targ_vel)])
 
-        joint_v = [-self.Kp*d_pos - self.Kv*d_vel for (d_pos, d_vel) in zip(delta_pos, delta_vel)] # backwards correction term
+        joint_v = -self.Kp*delta_pos - self.Kv*delta_vel # backwards correction term
         Ms = self.kin.inertia().tolist()
 
         targ_a = path.target_acceleration(t)
         targ_a = np.pad(targ_a, (0, 3), 'constant')
         targ_acc = np.matmul(inv_j, targ_a).tolist()[0]
         # pdb.set_trace()
-        torque_dict = {joint_name: np.dot(M, targ_acc) + jv for (joint_name, jv, M) in zip(joint_names, joint_v, Ms)}
+        torque_dict = {joint_name: np.dot(M, targ_acc) + jv for (joint_name, jv, M) in zip(joint_names, joint_v.tolist(), Ms)}
         self.limb.set_joint_torques(torque_dict)
