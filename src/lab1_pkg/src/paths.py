@@ -9,6 +9,7 @@ Author: Chris Correa
 
 # IMPORTANT: the init methods in this file may require extra parameters not
 # included in the starter code.
+GRAVITY = 0.01
 
 class MotionPath:
     def target_position(self, time):
@@ -37,12 +38,14 @@ class LinearPath(MotionPath):
         if time < warmup:
             delta = self.target_pos - self.start_pos
             v = self.target_velocity(time)
-            return delta * np.linalg.norm(v)
-        elif self.target_time - time < warmup:
-            delta = self.target_pos - self.start_pos
-            v = self.target_velocity(time)
-            return -delta * np.linalg.norm(v)
-        return 0
+            return delta * np.linalg.norm(v) + [0, 0, GRAVITY]
+        # elif self.target_time - time < warmup:
+        #     delta = self.target_pos - self.start_pos
+        #     v = self.target_velocity(time)
+        #     return -delta * np.linalg.norm(v) + [0, 0, GRAVITY]
+        delta = self.target_pos - self.start_pos
+        v = self.target_velocity(time)
+        return delta*np.linalg.norm(v)*0.4 + [0, 0, GRAVITY]
 
 class CircularPath(MotionPath):
     def __init__(self, center, start_pos, target_time):
@@ -67,7 +70,9 @@ class CircularPath(MotionPath):
 
     def target_acceleration(self, time):
         circum = np.pi * 2 * self.radius
-        return -(self.target_position(time) - self.center) / self.radius * (circum / self.target_time)**2 / self.radius
+        acc = -(self.target_position(time) - self.center) / self.radius * (circum / self.target_time)**2 / self.radius
+        acc[2] += GRAVITY
+        return acc
 
 # You can implement multiple paths a couple ways.  The way I chose when I took
 # the class was to create several different paths and pass those into the

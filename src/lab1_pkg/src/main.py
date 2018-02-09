@@ -64,13 +64,13 @@ if __name__ == "__main__":
         controller = PDJointVelocityController(limb, kin, Kp, Kv)
     if args.controller == 'torque':
         # YOUR CODE HERE
-        Kp = 0.75
-        Kv = 0.75
+        Kp = 0.01
+        Kv = 0.01
         controller = PDJointTorqueController(limb, kin, Kp, Kv)
 
     raw_input('Press <Enter> to start')
     cur_pos = limb.endpoint_pose()['position']
     target_time = 5
-    path = CircularPath(cur_pos, cur_pos+np.array([-0.1, 0, 0]), target_time)
+    path = LinearPath(cur_pos, cur_pos+np.array([-0.2, 0, 0]), target_time)
 
     controller.execute_path(path, lambda c, p, t: t > p.target_time, timeout=target_time, log=False)
