@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-ar_marker', '-ar', type=float, default=5)
-    parser.add_argument('-controller', '-c', type=str, default='velocity') # workspace, velocity, or torque
+    parser.add_argument('-controller', '-c', type=str, default='torque') # workspace, velocity, or torque
     parser.add_argument('-arm', '-a', type=str, default='left') # or left
     args = parser.parse_args()
 
@@ -69,21 +69,23 @@ if __name__ == "__main__":
         controller = PDJointVelocityController(limb, kin, Kp, Kv)
     if args.controller == 'torque':
         # YOUR CODE HERE
-        Kp = np.array([2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
-        Kv = 0
+        #12
+        Kp = 2.5*np.array([0, 10, 0, 10, 0, 0, 0])
+        Kv = 0.3*np.array([0, 6, 0, 6, 0, 0, 0])
         controller = PDJointTorqueController(limb, kin, Kp, Kv)
 
     raw_input('Press <Enter> to start')
 
-    execute_multiple_paths = True
+    execute_multiple_paths = False
 
     if not execute_multiple_paths:
-        tag_pos = lookup_tag(args.ar_marker)
+        # tag_pos = lookup_tag(args.ar_marker)
 
         cur_pos = limb.endpoint_pose()['position']
-        target_time = 5
-        # path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15], target_time)
-        path = CircularPath(cur_pos, tag_pos, target_time)
+        target_time = 10
+        # path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15]), target_time)
+        path = LinearPath(cur_pos, cur_pos + np.array([0, 0, 0.15]), target_time)
+        # path = CircularPath(cur_pos, tag_pos, target_time)
 
         def finished(c, p, t):
             epsilon = 0.075

@@ -159,7 +159,8 @@ class PDJointTorqueController(Controller):
         cur_angles = self.limb.joint_angles()
         cur_pos = [cur_angles[joint_name] for joint_name in joint_names] # list of current joint angles
 
-        targ_x = path.target_position(t)
+        # targ_x = path.target_position(t)
+        targ_x = path.start_pos + np.array([0, 0.05, 0])
         orientation = self.limb.endpoint_pose()['orientation']
         targ_pos = self.kin.inverse_kinematics(targ_x, orientation, cur_pos).tolist() # list of target joint angles
 
@@ -175,11 +176,17 @@ class PDJointTorqueController(Controller):
         delta_vel = np.array([cur - targ for (cur, targ) in zip(cur_vel, targ_vel)])
 
         joint_v = -self.Kp*delta_pos - self.Kv*delta_vel # backwards correction term
+        print('delta_pos', delta_pos)
+        print('joint_names', joint_names)
+        # print('delta_vel', delta_vel)
+        print('joint_v', joint_v)
+        print('forces', np.matmul(np.linalg.pinv(self.kin.jacobian().T), joint_v))
+        
         Ms = self.kin.inertia().tolist()
 
         targ_a = path.target_acceleration(t)
         targ_a = np.pad(targ_a, (0, 3), 'constant')
         targ_acc = np.matmul(inv_j, targ_a).tolist()[0]
-        # pdb.set_trace()
         torque_dict = {joint_name: np.dot(M, targ_acc) + jv for (joint_name, jv, M) in zip(joint_names, joint_v.tolist(), Ms)}
+        # print(torque_dict)
         self.limb.set_joint_torques(torque_dict)

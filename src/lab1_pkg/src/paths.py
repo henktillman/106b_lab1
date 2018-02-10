@@ -9,7 +9,7 @@ Author: Chris Correa
 
 # IMPORTANT: the init methods in this file may require extra parameters not
 # included in the starter code.
-GRAVITY = 0.05
+GRAVITY = 0
 
 class MotionPath:
     def target_position(self, time):
@@ -34,18 +34,7 @@ class LinearPath(MotionPath):
         return (self.target_pos - self.start_pos) / self.target_time
 
     def target_acceleration(self, time):
-        warmup = 0.4
-        if time < warmup:
-            delta = self.target_pos - self.start_pos
-            v = self.target_velocity(time)
-            return delta * np.linalg.norm(v) + [0, 0, GRAVITY]
-        # elif self.target_time - time < warmup:
-        #     delta = self.target_pos - self.start_pos
-        #     v = self.target_velocity(time)
-        #     return -delta * np.linalg.norm(v) + [0, 0, GRAVITY]
-        delta = self.target_pos - self.start_pos
-        v = self.target_velocity(time)
-        return delta*np.linalg.norm(v)*0.4 + [0, 0, GRAVITY]
+        return np.array([0, 0, GRAVITY])
 
 class CircularPath(MotionPath):
     def __init__(self, start_pos, center, target_time):
@@ -87,7 +76,6 @@ class MultiplePaths(MotionPath):
     def target_position(self, time):
         cur_path_index = int(float(time) / self.time_per_path)
         sub_time = float(time) % self.time_per_path
-        print(cur_path_index, sub_time)
         if cur_path_index >= self.num_paths:
             return self.paths[-1].target_pos
         return self.paths[cur_path_index].target_position(sub_time)
