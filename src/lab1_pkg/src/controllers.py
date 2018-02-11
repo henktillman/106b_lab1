@@ -22,7 +22,7 @@ class Controller:
         while True:
             t = (rospy.Time.now() - start_t).to_sec()
             if timeout is not None and t >= timeout:
-                return False
+                break
             self.step_path(path, t)
             if log:
                 times.append(t)
@@ -187,7 +187,7 @@ class PDJointTorqueController(Controller):
         # print('joint_names', joint_names)
         # print('joint_v', joint_v)
         # print('forces', np.matmul(np.linalg.pinv(self.kin.jacobian().T), joint_v))
-        
+
         Ms = self.kin.inertia().tolist()
 
         targ_a = path.target_acceleration(t)

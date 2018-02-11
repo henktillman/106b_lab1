@@ -28,11 +28,11 @@ def lookup_tag(tag_number):
     from_frame = 'base'
     to_frame = 'ar_marker_{}'.format(tag_number)
     while not rospy.is_shutdown():
-        try: 
+        try:
             # if not listener.frameExists(from_frame) or not listener.frameExists(to_frame):
             #     print 'Frames not found'
             #     print 'Did you place AR marker {} within view of the baxter left hand camera?'.format(tag_number)
-            #     exit(0)     
+            #     exit(0)
             t = listener.getLatestCommonTime(from_frame, to_frame)
             tag_pos, _ = listener.lookupTransform(from_frame, to_frame, t)
             break
@@ -94,21 +94,25 @@ if __name__ == "__main__":
 
     raw_input('Press <Enter> to start')
 
-    execute_multiple_paths = True
+    mode = 'TRACKING'
 
-    if not execute_multiple_paths:
+    if mode == 'LINEAR':
         tag_pos = lookup_tag(args.ar_marker)
 
         cur_pos = limb.endpoint_pose()['position']
         target_time = 10
         path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15]), target_time)
-        # path = LinearPath(cur_pos, cur_pos + np.array([0.15, 0.15, 0.15]), target_time)
-        # path = CircularPath(cur_pos, tag_pos, target_time)
 
         controller.execute_path(path, finished, timeout=target_time*1.2, log=True)
-        # path = LinearPath(cur_pos, cur_pos - np.array([0.15, 0.15, 0.15]), target_time)
-        # controller.execute_path(path, finished, timeout=target_time*1.2, log=True)
-    else:
+    elif mode == 'CIRCLE':
+        tag_pos = lookup_tag(args.ar_marker)
+
+        cur_pos = limb.endpoint_pose()['position']
+        target_time = 10
+        path = CircularPath(cur_pos, tag_pos, target_time)
+
+        controller.execute_path(path, finished, timeout=target_time*1.2, log=True)
+    elif mode == 'MULTIPLE':
         tag_numbers = [1, 2, 3, 5]
         z_offset = 0.15
         time_per_path = 5.0
@@ -125,3 +129,11 @@ if __name__ == "__main__":
 
         multiple_path = MultiplePaths(paths, time_per_path)
         controller.execute_path(multiple_path, finished, timeout=len(multiple_path.paths)*time_per_path*1.2, log=True)
+    elif mode == 'TRACKING':
+        while True:
+            tag_pos = lookup_tag(args.ar_marker)
+
+            cur_pos = limb.endpoint_pose()['position']
+            target_time = 2
+            path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15]), target_time)
+            controller.execute_path(path, finished, timeout=target_time/8., log=True)
