@@ -26,8 +26,14 @@ class Controller:
             self.step_path(path, t)
             if log:
                 times.append(t)
-                actual_positions.append(self.current_joint_pos)
-                actual_velocities.append(self.current_joint_vel)
+                actual_position = self.limb.endpoint_pose()['position']
+                actual_positions.append([actual_position.x, actual_position.y, actual_position.z])
+                joint_names = self.limb.joint_names()
+                joint_v = self.limb.joint_velocities()
+                joint_v = np.array([joint_v[joint_name] for joint_name in joint_names])
+                j = self.kin.jacobian()
+                end_v = np.matmul(j, joint_v)
+                actual_velocities.append(end_v[0, :3].tolist()[0])
                 target_positions.append(path.target_position(t))
                 target_velocities.append(path.target_velocity(t))
             if finished is not None and finished(self, path, t):
@@ -37,14 +43,16 @@ class Controller:
         if log:
             import matplotlib.pyplot as plt
 
-            np_actual_positions = np.zeros((len(times), 3))
-            np_actual_velocities = np.zeros((len(times), 3))
-            for i in range(len(times)):
-                # print actual_positions[i]
-                actual_positions_dict = dict((joint, actual_positions[i][j]) for j, joint in enumerate(self.limb.joint_names()))
-                print "dictionary version", actual_positions_dict
-                np_actual_positions[i] = self.kin.forward_position_kinematics(joint_values=actual_positions_dict)[:3]
-                np_actual_velocities[i] = self.kin.jacobian(joint_values=actual_positions_dict)[:3].dot(actual_velocities[i])
+            np_actual_positions = np.array(actual_positions)
+            np_actual_velocities = np.array(actual_velocities)
+            # np_actual_positions = np.zeros((len(times), 3))
+            # np_actual_velocities = np.zeros((len(times), 3))
+            # for i in range(len(times)):
+            #     # print actual_positions[i]
+            #     actual_positions_dict = dict((joint, actual_positions[i][j]) for j, joint in enumerate(self.limb.joint_names()))
+            #     print "dictionary version", actual_positions_dict
+            #     np_actual_positions[i] = self.kin.forward_position_kinematics(joint_values=actual_positions_dict)[:3]
+            #     np_actual_velocities[i] = self.kin.jacobian(joint_values=actual_positions_dict)[:3].dot(actual_velocities[i])
             target_positions = np.array(target_positions)
             target_velocities = np.array(target_velocities)
             plt.figure()
@@ -159,8 +167,7 @@ class PDJointTorqueController(Controller):
         cur_angles = self.limb.joint_angles()
         cur_pos = [cur_angles[joint_name] for joint_name in joint_names] # list of current joint angles
 
-        # targ_x = path.target_position(t)
-        targ_x = path.start_pos + np.array([0, 0.05, 0])
+        targ_x = path.target_position(t)
         orientation = self.limb.endpoint_pose()['orientation']
         targ_pos = self.kin.inverse_kinematics(targ_x, orientation, cur_pos).tolist() # list of target joint angles
 
@@ -176,11 +183,10 @@ class PDJointTorqueController(Controller):
         delta_vel = np.array([cur - targ for (cur, targ) in zip(cur_vel, targ_vel)])
 
         joint_v = -self.Kp*delta_pos - self.Kv*delta_vel # backwards correction term
-        print('delta_pos', delta_pos)
-        print('joint_names', joint_names)
-        # print('delta_vel', delta_vel)
-        print('joint_v', joint_v)
-        print('forces', np.matmul(np.linalg.pinv(self.kin.jacobian().T), joint_v))
+        # print('delta_pos', delta_pos)
+        # print('joint_names', joint_names)
+        # print('joint_v', joint_v)
+        # print('forces', np.matmul(np.linalg.pinv(self.kin.jacobian().T), joint_v))
         
         Ms = self.kin.inertia().tolist()
 

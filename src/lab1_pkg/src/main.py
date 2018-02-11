@@ -40,6 +40,25 @@ def lookup_tag(tag_number):
             continue
     return tag_pos[0:3] # only return x, y, z
 
+def finished(c, p, t):
+    epsilon = 0.075
+    cur_pos = limb.endpoint_pose()['position']
+    if isinstance(p, CircularPath):
+        if np.linalg.norm(cur_pos - p.start_pos) < epsilon and t > p.target_time*0.5:
+            return True
+        return False
+    elif isinstance(p, LinearPath):
+        if np.linalg.norm(cur_pos - p.target_pos) < epsilon:
+            return True
+        return False
+    elif isinstance(p, MultiplePaths):
+        if t > p.time_per_path * (len(p.paths) - 0.5) and finished(c, p.paths[-1], p.time_per_path):
+            return True
+        return False
+    else:
+        print("dont recognize path type")
+        return True
+
 if __name__ == "__main__":
     def sigint_handler(signal, frame):
         sys.exit(0)
@@ -50,7 +69,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-ar_marker', '-ar', type=float, default=5)
-    parser.add_argument('-controller', '-c', type=str, default='torque') # workspace, velocity, or torque
+    parser.add_argument('-controller', '-c', type=str, default='velocity') # workspace, velocity, or torque
     parser.add_argument('-arm', '-a', type=str, default='left') # or left
     args = parser.parse_args()
 
@@ -69,42 +88,28 @@ if __name__ == "__main__":
         controller = PDJointVelocityController(limb, kin, Kp, Kv)
     if args.controller == 'torque':
         # YOUR CODE HERE
-        #12
-        Kp = 2.5*np.array([0, 10, 0, 10, 0, 0, 0])
-        Kv = 0.3*np.array([0, 6, 0, 6, 0, 0, 0])
+        Kp = 2.5*np.array([6, 36, 24, 10, 1, 0.1, 1])
+        Kv = 0.3*np.array([12, 72, 36, 24, 8, 12, 8])
         controller = PDJointTorqueController(limb, kin, Kp, Kv)
 
     raw_input('Press <Enter> to start')
 
-    execute_multiple_paths = False
+    execute_multiple_paths = True
 
     if not execute_multiple_paths:
-        # tag_pos = lookup_tag(args.ar_marker)
+        tag_pos = lookup_tag(args.ar_marker)
 
         cur_pos = limb.endpoint_pose()['position']
         target_time = 10
-        # path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15]), target_time)
-        path = LinearPath(cur_pos, cur_pos + np.array([0, 0, 0.15]), target_time)
+        path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15]), target_time)
+        # path = LinearPath(cur_pos, cur_pos + np.array([0.15, 0.15, 0.15]), target_time)
         # path = CircularPath(cur_pos, tag_pos, target_time)
 
-        def finished(c, p, t):
-            epsilon = 0.075
-            cur_pos = limb.endpoint_pose()['position']
-            if isinstance(p, CircularPath):
-                if np.linalg.norm(cur_pos - p.start_pos) < epsilon and t > p.target_time*0.5:
-                    return True
-                return False
-            elif isinstance(p, LinearPath):
-                if np.linalg.norm(cur_pos - p.target_pos) < epsilon:
-                    return True
-                return False
-            else:
-                print("dont recognize path type")
-                return True
-
-        controller.execute_path(path, finished, timeout=target_time*1.2, log=False)
+        controller.execute_path(path, finished, timeout=target_time*1.2, log=True)
+        # path = LinearPath(cur_pos, cur_pos - np.array([0.15, 0.15, 0.15]), target_time)
+        # controller.execute_path(path, finished, timeout=target_time*1.2, log=True)
     else:
-        tag_numbers = [4, 5, 6, 8]
+        tag_numbers = [1, 2, 3, 5]
         z_offset = 0.15
         time_per_path = 5.0
         tag_positions = []
@@ -119,4 +124,4 @@ if __name__ == "__main__":
             last_pos = tag_pos
 
         multiple_path = MultiplePaths(paths, time_per_path)
-        controller.execute_path(multiple_path, None, timeout=len(tag_numbers)*time_per_path*1.2, log=False)
+        controller.execute_path(multiple_path, finished, timeout=len(multiple_path.paths)*time_per_path*1.2, log=True)
