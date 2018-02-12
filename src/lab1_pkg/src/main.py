@@ -23,6 +23,15 @@ import signal
 from controllers import PDWorkspaceVelocityController, PDJointVelocityController, PDJointTorqueController
 from paths import LinearPath, CircularPath, MultiplePaths
 
+# Startup commands
+# rosrun baxter_tools enable_robot.py -e
+# rosrun baxter_tools camera_control.py -o left_hand_camera -r 1280x800
+# rosrun baxter_interface joint_trajectory_action_server.py
+# roslaunch lab1_pkg baxter_left_hand_track.launch
+# roslaunch baxter_moveit_config demo_baxter.launch right_electric_gripper:=true left_electric_gripper:=true
+# rosrun lab1_pkg main.py
+
+
 def lookup_tag(tag_number):
     listener = tf.TransformListener()
     from_frame = 'base'
@@ -64,7 +73,13 @@ if __name__ == "__main__":
         sys.exit(0)
     signal.signal(signal.SIGINT, sigint_handler)
     moveit_commander.roscpp_initialize(sys.argv)
+
     rospy.init_node('moveit_node')
+    robot = moveit_commander.RobotCommander()
+    scene = moveit_commander.PlanningSceneInterface()
+    left_arm = moveit_commander.MoveGroupCommander('left_arm')
+    left_arm.set_planner_id('RRTConnectkConfigDefault')
+    left_arm.set_planning_time(10)
     time.sleep(1)
 
     parser = argparse.ArgumentParser()
@@ -103,7 +118,7 @@ if __name__ == "__main__":
         target_time = 10
         path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15]), target_time)
 
-        controller.execute_path(path, finished, timeout=target_time*1.2, log=True)
+        controller.execute_path(path, finished, timeout=target_time*1.2, log=True, arm=left_arm)
     elif mode == 'CIRCLE':
         tag_pos = lookup_tag(args.ar_marker)
 
@@ -111,7 +126,7 @@ if __name__ == "__main__":
         target_time = 10
         path = CircularPath(cur_pos, tag_pos, target_time)
 
-        controller.execute_path(path, finished, timeout=target_time*1.2, log=True)
+        controller.execute_path(path, finished, timeout=target_time*1.2, log=True, arm=left_arm)
     elif mode == 'MULTIPLE':
         tag_numbers = [1, 2, 3, 5]
         z_offset = 0.15
@@ -128,7 +143,7 @@ if __name__ == "__main__":
             last_pos = tag_pos
 
         multiple_path = MultiplePaths(paths, time_per_path)
-        controller.execute_path(multiple_path, finished, timeout=len(multiple_path.paths)*time_per_path*1.2, log=True)
+        controller.execute_path(multiple_path, finished, timeout=len(multiple_path.paths)*time_per_path*1.2, log=True, arm=left_arm)
     elif mode == 'TRACKING':
         np_actual_positions, np_actual_velocities, target_positions, target_velocities, times = [], [], [], [], []
         import matplotlib.pyplot as plt
@@ -137,9 +152,9 @@ if __name__ == "__main__":
             tag_pos = lookup_tag(args.ar_marker)
 
             cur_pos = limb.endpoint_pose()['position']
-            target_time = 0.5
+            target_time = 5.0
             path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15]), target_time)
-            ax, av, tx, tv = controller.execute_path(path, finished, timeout=target_time/8., log=True)
+            ax, av, tx, tv = controller.execute_path(path, finished, timeout=target_time/8., log=True, arm=left_arm)
             np_actual_positions.append(ax.tolist()[0])
             np_actual_velocities.append(av.tolist()[0])
             target_positions.append(tx.tolist()[0])

@@ -1,17 +1,20 @@
+# import sys
 import rospy
 import pdb
 import numpy as np
 from utils import *
 from geometry_msgs.msg import PoseStamped
+# import moveit_commander
+# from moveit_msgs.msg import OrientationConstraint, Constraints
 """
 Starter script for lab1.
 Author: Chris Correa
 """
 class Controller:
-    def step_path(self, path, t):
+    def step_path(self, path, t, arm=None):
         raise NotImplementedError
 
-    def execute_path(self, path, finished, timeout=None, log=False):
+    def execute_path(self, path, finished, timeout=None, log=False, arm=None):
         start_t = rospy.Time.now()
         times = list()
         actual_positions = list()
@@ -19,11 +22,12 @@ class Controller:
         target_positions = list()
         target_velocities = list()
         r = rospy.Rate(200)
+        
         while True:
             t = (rospy.Time.now() - start_t).to_sec()
             if timeout is not None and t >= timeout:
                 break
-            self.step_path(path, t)
+            self.step_path(path, t, arm)
             if log:
                 times.append(t)
                 actual_position = self.limb.endpoint_pose()['position']
@@ -56,45 +60,45 @@ class Controller:
             target_positions = np.array(target_positions)
             target_velocities = np.array(target_velocities)
             return np_actual_positions, np_actual_velocities, target_positions, target_velocities
-            # plt.figure()
-            # # print len(times), actual_positions.shape()
-            # plt.subplot(3,2,1)
-            # plt.plot(times, np_actual_positions[:,0], label='Actual')
-            # plt.plot(times, target_positions[:,0], label='Desired')
-            # plt.xlabel("Time (t)")
-            # plt.ylabel("X Position Error")
+            plt.figure()
+            # print len(times), actual_positions.shape()
+            plt.subplot(3,2,1)
+            plt.plot(times, np_actual_positions[:,0], label='Actual')
+            plt.plot(times, target_positions[:,0], label='Desired')
+            plt.xlabel("Time (t)")
+            plt.ylabel("X Position Error")
 
-            # plt.subplot(3,2,2)
-            # plt.plot(times, np_actual_velocities[:,0], label='Actual')
-            # plt.plot(times, target_velocities[:,0], label='Desired')
-            # plt.xlabel("Time (t)")
-            # plt.ylabel("X Velocity Error")
+            plt.subplot(3,2,2)
+            plt.plot(times, np_actual_velocities[:,0], label='Actual')
+            plt.plot(times, target_velocities[:,0], label='Desired')
+            plt.xlabel("Time (t)")
+            plt.ylabel("X Velocity Error")
 
-            # plt.subplot(3,2,3)
-            # plt.plot(times, np_actual_positions[:,1], label='Actual')
-            # plt.plot(times, target_positions[:,1], label='Desired')
-            # plt.xlabel("time (t)")
-            # plt.ylabel("Y Position Error")
+            plt.subplot(3,2,3)
+            plt.plot(times, np_actual_positions[:,1], label='Actual')
+            plt.plot(times, target_positions[:,1], label='Desired')
+            plt.xlabel("time (t)")
+            plt.ylabel("Y Position Error")
 
-            # plt.subplot(3,2,4)
-            # plt.plot(times, np_actual_velocities[:,1], label='Actual')
-            # plt.plot(times, target_velocities[:,1], label='Desired')
-            # plt.xlabel("Time (t)")
-            # plt.ylabel("Y Velocity Error")
+            plt.subplot(3,2,4)
+            plt.plot(times, np_actual_velocities[:,1], label='Actual')
+            plt.plot(times, target_velocities[:,1], label='Desired')
+            plt.xlabel("Time (t)")
+            plt.ylabel("Y Velocity Error")
 
-            # plt.subplot(3,2,5)
-            # plt.plot(times, np_actual_positions[:,2], label='Actual')
-            # plt.plot(times, target_positions[:,2], label='Desired')
-            # plt.xlabel("time (t)")
-            # plt.ylabel("Z Position Error")
+            plt.subplot(3,2,5)
+            plt.plot(times, np_actual_positions[:,2], label='Actual')
+            plt.plot(times, target_positions[:,2], label='Desired')
+            plt.xlabel("time (t)")
+            plt.ylabel("Z Position Error")
 
-            # plt.subplot(3,2,6)
-            # plt.plot(times, np_actual_velocities[:,2], label='Actual')
-            # plt.plot(times, target_velocities[:,2], label='Desired')
-            # plt.xlabel("Time (t)")
-            # plt.ylabel("Z Velocity Error")
+            plt.subplot(3,2,6)
+            plt.plot(times, np_actual_velocities[:,2], label='Actual')
+            plt.plot(times, target_velocities[:,2], label='Desired')
+            plt.xlabel("Time (t)")
+            plt.ylabel("Z Velocity Error")
 
-            # plt.show()
+            plt.show()
 
         return True
 
@@ -105,24 +109,45 @@ class PDWorkspaceVelocityController(Controller):
         self.Kp = Kp
         self.Kv = Kv
 
-    def step_path(self, path, t):
+    def step_path(self, path, t, arm=None):
+        moveit = True
+        
         targ_x = path.target_position(t)
         cur_x = self.limb.endpoint_pose()['position']
 
-        targ_v = path.target_velocity(t)
-        cur_v = self.limb.endpoint_velocity()['linear']
+        if not moveit:
+            targ_v = path.target_velocity(t)
+            cur_v = self.limb.endpoint_velocity()['linear']
 
-        delta_x = cur_x - targ_x
-        delta_v = cur_v - targ_v
+            delta_x = cur_x - targ_x
+            delta_v = cur_v - targ_v
 
-        control_v = -self.Kp*delta_x - self.Kv*delta_v
-        control_v = np.pad(control_v, (0, 3), 'constant')
-        inv_j = self.kin.jacobian_pseudo_inverse()
-        joint_v = np.matmul(inv_j, control_v).tolist()[0]
+            control_v = -self.Kp*delta_x - self.Kv*delta_v
+            control_v = np.pad(control_v, (0, 3), 'constant')
+            inv_j = self.kin.jacobian_pseudo_inverse()
+            joint_v = np.matmul(inv_j, control_v).tolist()[0]
 
-        joint_names = self.limb.joint_names()
-        joint_dict = {joint_name: jv for (joint_name, jv) in zip(joint_names, joint_v)}
-        self.limb.set_joint_velocities(joint_dict)
+            joint_names = self.limb.joint_names()
+            joint_dict = {joint_name: jv for (joint_name, jv) in zip(joint_names, joint_v)}
+            self.limb.set_joint_velocities(joint_dict)
+        else:
+            goal = PoseStamped()
+            goal.header.frame_id = "base"
+            goal.pose.position.x = targ_x[0]
+            goal.pose.position.y = targ_x[1]
+            goal.pose.position.z = targ_x[2]
+            goal.pose.orientation.x = 0.0
+            goal.pose.orientation.y = -1.0
+            goal.pose.orientation.z = 0.0
+            goal.pose.orientation.w = 0.0
+            arm.set_pose_target(goal)
+            arm.set_start_state_to_current_state
+            plan = arm.plan()
+            arm.execute(plan)
+
+
+
+
 
 class PDJointVelocityController(Controller):
     def __init__(self, limb, kin, Kp, Kv):
@@ -131,7 +156,7 @@ class PDJointVelocityController(Controller):
         self.Kp = Kp
         self.Kv = Kv
 
-    def step_path(self, path, t):
+    def step_path(self, path, t, arm=None):
         # YOUR CODE HERE
         joint_names = self.limb.joint_names()
         cur_angles = self.limb.joint_angles()
@@ -163,7 +188,7 @@ class PDJointTorqueController(Controller):
         self.Kp = Kp
         self.Kv = Kv
 
-    def step_path(self, path, t):
+    def step_path(self, path, t, arm=None):
         joint_names = self.limb.joint_names()
         cur_angles = self.limb.joint_angles()
         cur_pos = [cur_angles[joint_name] for joint_name in joint_names] # list of current joint angles
