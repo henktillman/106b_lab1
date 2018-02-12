@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-ar_marker', '-ar', type=float, default=5)
-    parser.add_argument('-controller', '-c', type=str, default='velocity') # workspace, velocity, or torque
+    parser.add_argument('-controller', '-c', type=str, default='workspace') # workspace, velocity, or torque
     parser.add_argument('-arm', '-a', type=str, default='left') # or left
     args = parser.parse_args()
 
@@ -130,10 +130,61 @@ if __name__ == "__main__":
         multiple_path = MultiplePaths(paths, time_per_path)
         controller.execute_path(multiple_path, finished, timeout=len(multiple_path.paths)*time_per_path*1.2, log=True)
     elif mode == 'TRACKING':
-        while True:
+        np_actual_positions, np_actual_velocities, target_positions, target_velocities, times = [], [], [], [], []
+        import matplotlib.pyplot as plt
+        for i in range(32):
+            print(i)
             tag_pos = lookup_tag(args.ar_marker)
 
             cur_pos = limb.endpoint_pose()['position']
-            target_time = 2
+            target_time = 0.5
             path = LinearPath(cur_pos, tag_pos + np.array([0, 0, 0.15]), target_time)
-            controller.execute_path(path, finished, timeout=target_time/8., log=True)
+            ax, av, tx, tv = controller.execute_path(path, finished, timeout=target_time/8., log=True)
+            np_actual_positions.append(ax.tolist()[0])
+            np_actual_velocities.append(av.tolist()[0])
+            target_positions.append(tx.tolist()[0])
+            target_velocities.append(tv.tolist()[0])
+            times.append(i/16.)
+        np_actual_positions = np.array(np_actual_positions)
+        np_actual_velocities = np.array(np_actual_velocities)
+        target_positions = np.array(target_positions)
+        target_velocities = np.array(target_velocities)
+        plt.figure()
+        # print len(times), actual_positions.shape()
+        plt.subplot(3,2,1)
+        plt.plot(times, np_actual_positions[:,0], label='Actual')
+        plt.plot(times, target_positions[:,0], label='Desired')
+        plt.xlabel("Time (t)")
+        plt.ylabel("X Position Error")
+
+        plt.subplot(3,2,2)
+        plt.plot(times, np_actual_velocities[:,0], label='Actual')
+        plt.plot(times, target_velocities[:,0], label='Desired')
+        plt.xlabel("Time (t)")
+        plt.ylabel("X Velocity Error")
+
+        plt.subplot(3,2,3)
+        plt.plot(times, np_actual_positions[:,1], label='Actual')
+        plt.plot(times, target_positions[:,1], label='Desired')
+        plt.xlabel("time (t)")
+        plt.ylabel("Y Position Error")
+
+        plt.subplot(3,2,4)
+        plt.plot(times, np_actual_velocities[:,1], label='Actual')
+        plt.plot(times, target_velocities[:,1], label='Desired')
+        plt.xlabel("Time (t)")
+        plt.ylabel("Y Velocity Error")
+
+        plt.subplot(3,2,5)
+        plt.plot(times, np_actual_positions[:,2], label='Actual')
+        plt.plot(times, target_positions[:,2], label='Desired')
+        plt.xlabel("time (t)")
+        plt.ylabel("Z Position Error")
+
+        plt.subplot(3,2,6)
+        plt.plot(times, np_actual_velocities[:,2], label='Actual')
+        plt.plot(times, target_velocities[:,2], label='Desired')
+        plt.xlabel("Time (t)")
+        plt.ylabel("Z Velocity Error")
+
+        plt.show()
